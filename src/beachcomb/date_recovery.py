@@ -8,17 +8,17 @@ Date recovery from file metadata for the beachcomb tool.
 import datetime as dt
 from pathlib import Path
 from typing import Optional, Tuple
-
-from .utils import run, which
+from .utils import which, run
+from .exiftoold import exiftool as et_call, available as et_available
 
 def exiftool_date(path: Path):
-    if not which("exiftool"):
+    if not et_available():
         return (None, None)
     tags = [
         "-SubSecDateTimeOriginal","-DateTimeOriginal","-CreateDate","-XMP:CreateDate",
         "-QuickTime:CreateDate","-api","QuickTimeUTC=1","-s","-s","-s", str(path)
     ]
-    rc, out, _ = run(["exiftool"] + tags, timeout=20)
+    rc, out, _ = et_call(tags, timeout=20)
     if rc != 0:
         return (None, None)
     for val in [l.strip() for l in out.splitlines() if l.strip()]:
@@ -36,7 +36,7 @@ def video_date(path: Path):
     if not which("exiftool"):
         return (None, None)
     tags = ["-api","QuickTimeUTC=1","-MediaCreateDate","-TrackCreateDate","-CreateDate","-DateTimeOriginal","-s","-s","-s", str(path)]
-    rc, out, _ = run(["exiftool"]+tags, timeout=20)
+    rc, out, _ = et_call(tags, timeout=20)
     if rc != 0: 
         return (None,None)
     for line in out.splitlines():

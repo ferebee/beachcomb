@@ -56,7 +56,8 @@ MIT © 2025 Chris Ferebee
 
 ## Credits & Acknowledgements
 Concept by Chris Ferebee, execution mostly by LLMs.  
-This project is not affiliated with PhotoRec/TestDisk.
+This project is not affiliated with the excellent PhotoRec/TestDisk.
+Mad props to exiftool, which does a lot of the heavy lifting.
 
 ## Contributing
 PRs welcome.

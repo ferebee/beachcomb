@@ -11,6 +11,8 @@ validation, and sorting.
 import hashlib
 import itertools
 import os
+import traceback
+import sys
 import shutil
 import threading
 import concurrent.futures as cf
@@ -26,6 +28,8 @@ from . import type_detection
 from . import date_recovery
 from . import image_processing
 from . import validation
+from .exiftoold import exiftool as et_call, available as et_available
+
 
 # --- Single Source of Truth for Version ---
 VERSION = "0.1"
@@ -285,12 +289,14 @@ class Planner:
 
     # ------------------------- binning -------------------------
 
-    def _dest_filename(self, r: dict, exiftool_daemon) -> str:
+#    def _dest_filename(self, r: dict, exiftool_daemon) -> str:
+    def _dest_filename(self, r: dict) -> str:
         src = Path(r["source_path"])
         guessed_ext = r.get("guessed_ext") or None
         
         if self.rename != "none":
-            new_name = renaming.generate_new_name(src, self.rename, r, exiftool_daemon=exiftool_daemon)
+#            new_name = renaming.generate_new_name(src, self.rename, r, exiftool_daemon=exiftool_daemon)
+            new_name = renaming.generate_new_name(src, self.rename, r)
             if new_name:
                 return new_name
 
@@ -301,9 +307,12 @@ class Planner:
                 name = f"{name}.{guessed_ext}"
         return name
 
-    def _assign_dest(self, idx: int, bin_dir: Path, exiftool_daemon):
+#    def _assign_dest(self, idx: int, bin_dir: Path, exiftool_daemon):
+#        r = self.records[idx]
+#        dest_name = self._dest_filename(r, exiftool_daemon)
+    def _assign_dest(self, idx: int, bin_dir: Path):
         r = self.records[idx]
-        dest_name = self._dest_filename(r, exiftool_daemon)
+        dest_name = self._dest_filename(r)
         candidate = bin_dir / dest_name
         candidate = utils.ensure_unique_path(candidate)
         self.records[idx]["dest_path"] = str(candidate)
@@ -518,12 +527,18 @@ class Planner:
                     label = f"undated-{(start//self.max_per_bin)+1:04d}"
                     bins_plan.append((label, part))
             
-            # We use exiftool to assign names based on internal titles. Run it in daemon mode here
-            with renaming.ExifToolDaemon() as exiftool_daemon:
-                for label, members in sorted(bins_plan, key=lambda t: t[0]):
-                    bin_dir = fam_root / label
-                    for i in sorted(members, key=lambda j: self.records[j]["source_path"]):
-                        self._assign_dest(i, bin_dir, exiftool_daemon)
+#            # We use exiftool to assign names based on internal titles. Run it in daemon mode here
+#            with renaming.ExifToolDaemon() as exiftool_daemon:
+#                for label, members in sorted(bins_plan, key=lambda t: t[0]):
+#                    bin_dir = fam_root / label
+#                    for i in sorted(members, key=lambda j: self.records[j]["source_path"]):
+#                        self._assign_dest(i, bin_dir, exiftool_daemon)
+            # Assign destinations (reads metadata via shared exiftoold)
+            for label, members in sorted(bins_plan, key=lambda t: t[0]):
+                bin_dir = fam_root / label
+                for i in sorted(members, key=lambda j: self.records[j]["source_path"]):
+                    self._assign_dest(i, bin_dir)
+            
 
     def write_manifest_csv(self, out_path: Path):
         fields = ["source_path","dest_path","family","subtype","ext","size_bytes","mtime_local","integrity","undated_flag","date_source","date_local","sig","fullhash","duplicate_of","pdf_kind","iphone","mime","guessed_ext","type_label","img_kind","exif_make","exif_model","exif_software","px_w","px_h","pdf_version","pdf_encrypted","pdf_linearized","pdf_error","pdf_ocr_applied","office_error","video_duration","video_repaired","video_error_source"]
@@ -648,7 +663,7 @@ class Planner:
                 try:
                     if utils.which("exiftool"):
                         val = r["date_local"].replace("T", " ")
-                        utils.run(["exiftool", "-overwrite_original",
+                        et_call(["-overwrite_original",
                              f"-FileModifyDate<{val}", f"-FileCreateDate<{val}", str(dest)], timeout=20)
                     else:
                         ts = dt.datetime.fromisoformat(r["date_local"]).timestamp()
@@ -663,24 +678,84 @@ class Planner:
 
         records = []
         lock = threading.Lock()
+        failures = []
+        fail_open = os.environ.get("BC_FAIL_OPEN", "0") not in ("0","false","False","no","NO")
+        trace = os.environ.get("BC_TRACE", "0") not in ("0","false","False","no","NO")
+ 
 
         def worker(p: Path):
             try:
                 rec = self.process_file(p)
                 with lock:
                     records.append(rec)
-            except Exception:
-                pass
+            except Exception as e:
+                msg = f"ERROR processing file: {p} :: {e.__class__.__name__}: {e}"
+                if trace:
+                    tb = traceback.format_exc(limit=6)
+                    utils.log(msg + "\n" + tb)
+                else:
+                    utils.log(msg)
+                with lock:
+                    failures.append((p, str(e)))
+                # Fail-open: emit a minimal record so copying can proceed if desired
+                if fail_open:
+                    try:
+                        mtime_local = utils.file_mtime(p)
+                        rec = {
+                            "source_path": str(p),
+                            "family": "Other",
+                            "subtype": "Unknown",
+                            "mime": None,
+                            "mtime_local": mtime_local,
+                            "size": p.stat().st_size,
+                            "duplicate_of": None,
+                            "integrity": "unknown",
+                            "notes": "fail-open",
+                        }
+                        with lock:
+                            records.append(rec)
+                    except Exception:
+                        # If even fail-open fails, we just skip this file.
+                        if trace:
+                            utils.log("Fail-open also failed:\n" + traceback.format_exc(limit=4))
 
         with cf.ThreadPoolExecutor(max_workers=self.workers) as ex:
             list(ex.map(worker, files))
 
         self.records = records
+        total_files = len(files)
+        if failures:
+            utils.log(f"Processing failures: {len(failures)}/{total_files}. "
+                      f"Set BC_TRACE=1 for tracebacks, BC_FAIL_OPEN=1 to keep going with minimal records.")
+            # Show up to 5 examples
+            for p, err in failures[:5]:
+                utils.log(f"  · {p} → {err}")
+
         utils.log("Planning dedupe full-hash confirmations...")
         self.stage_full_hash_for_collisions()
         
         utils.log("Planning bins...")
         self.plan_bins()
+        
+        # --- diagnostics: what will be copied? ---
+        total = len(self.records)
+        with_dest = sum(1 for r in self.records if r.get("dest_path"))
+        dups = sum(1 for r in self.records if r.get("duplicate_of"))
+        damaged = sum(1 for r in self.records if r.get("integrity") != "ok")
+        ocr_wait = sum(
+            1 for r in self.records
+            if r.get("family") == "PDFs"
+            and (self.pdf_ocr != "off")
+            and (self.pdf_ocr == "all" or (self.pdf_ocr == "scans" and r.get("pdf_kind") == "Scans"))
+        )
+        utils.log(f"Plan summary: total={total}, with_dest={with_dest}, duplicates={dups}, damaged={damaged}, pdfs_for_ocr={ocr_wait}")
+        # Show a few example destinations
+        shown = 0
+        for r in self.records:
+            if r.get("dest_path"):
+                utils.log(f" → sample dest: {r['dest_path']}")
+                shown += 1
+                if shown >= 3: break
 
         manifests_dir = self.dest / "manifests"
         # reports_dir = self.dest / "reports"

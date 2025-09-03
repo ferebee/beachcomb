@@ -7,6 +7,7 @@ Content-aware file renaming for the beachcomb tool.
 """
 import re
 import subprocess
+# from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Dict, List
 import zipfile
@@ -14,68 +15,32 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 
 from .utils import run, which, zip_list_contents, log
+from .exiftoold import exiftool as et_call, available as et_available
 
-# --- Start of New/Modified Code ---
+## --- Start of New/Modified Code ---
+#
+#class ExifToolDaemon:
+#    """
+#    A context manager to manage a persistent exiftool process for batch processing.
+#    Thin adapter that proxies to the shared exiftool daemon in beachcomb.exiftoold.
+#    Keeps the existing context-manager API so callers don't need to change.
+#    """
+#    def __enter__(self):
+#        return self
+#
+#    def __exit__(self, exc_type, exc, tb):
+#        return False
+#    def execute(self, *args: str):
+#        # Use the shared ExifTool daemon for a single call
+#        if not et_available():
+#            return []
+#        rc, out, _ = et_call(list(args), timeout=15)
+#        if rc != 0 or not out:
+#            return []
+#        return [line for line in out.splitlines() if line.strip()]
 
-class ExifToolDaemon:
-    """
-    A context manager to manage a persistent exiftool process for batch processing.
-    """
-    def __init__(self):
-        self.process = None
-
-    def __enter__(self):
-        """Starts the exiftool process and returns the instance."""
-        if not which("exiftool"):
-            raise FileNotFoundError("exiftool command not found in PATH.")
-        
-        # -stay_open True keeps the process running
-        # -@ - tells exiftool to read command arguments from stdin
-        command = ["exiftool", "-stay_open", "True", "-@", "-"]
-        self.process = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True, # Use text mode for strings, not bytes
-            encoding='utf-8'
-        )
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Gracefully shuts down the exiftool process."""
-        if self.process:
-            # Tell the process to close
-            self.process.stdin.write("-stay_open\nFalse\n")
-            self.process.stdin.flush()
-            self.process.stdin.close()
-            self.process.wait(timeout=5)
-            self.process = None
-
-    def execute(self, *args: str) -> List[str]:
-        """
-        Executes a command on the running exiftool process.
-        """
-        if not self.process:
-            raise RuntimeError("ExifTool process is not running.")
-
-        # Write arguments, one per line
-        self.process.stdin.write("\n".join(args) + "\n")
-        # Write the execute command
-        self.process.stdin.write("-execute\n")
-        self.process.stdin.flush()
-
-        # Read the output until the {ready} delimiter
-        output = []
-        while True:
-            line = self.process.stdout.readline().strip()
-            if line == "{ready}":
-                break
-            if line:
-                output.append(line)
-        return output
-
-def extract_metadata_title(path: Path, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
+# def extract_metadata_title(path: Path, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
+def extract_metadata_title(path: Path) -> Optional[str]:
     """
     Extracts a title-like field from file metadata using a persistent ExifTool process.
     This version is prioritized for image metadata standards like IPTC and EXIF.
@@ -110,9 +75,12 @@ def extract_metadata_title(path: Path, exiftool_daemon: ExifToolDaemon) -> Optio
         "-By-line"            # IPTC standard for the author's name.
     ]
     
-    # Execute the command on the daemon to extract the first available tag.
-    # Exiftool will process the tags in order and return the first one it finds.
-    output_lines = exiftool_daemon.execute(*tags, str(path))
+#    # Execute the command on the daemon to extract the first available tag.
+#    # Exiftool will process the tags in order and return the first one it finds.
+#    output_lines = exiftool_daemon.execute(*tags, str(path))
+    # Ask shared exiftoold daemon (returns rc, stdout, stderr_like)
+    rc, out, _ = et_call(tags + [str(path)], timeout=15)
+    output_lines = out.splitlines() if rc == 0 and out else []
 
     if not output_lines:
         return None
@@ -127,7 +95,8 @@ def extract_metadata_title(path: Path, exiftool_daemon: ExifToolDaemon) -> Optio
                 return value
     return None
 
-def generate_new_name(path: Path, policy: str, record: Dict, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
+# def generate_new_name(path: Path, policy: str, record: Dict, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
+def generate_new_name(path: Path, policy: str, record: Dict) -> Optional[str]:
     """Main dispatcher for generating a new filename based on policy."""
     if policy == "photorec" and not is_photorec_name(path.name):
         return None
@@ -140,7 +109,8 @@ def generate_new_name(path: Path, policy: str, record: Dict, exiftool_daemon: Ex
         new_name_part = rename_zip_archive(path)
     else:
         # Pass the daemon instance to the metadata extraction function
-        title = extract_metadata_title(path, exiftool_daemon=exiftool_daemon)
+#        title = extract_metadata_title(path, exiftool_daemon=exiftool_daemon)
+        title = extract_metadata_title(path)
         if title:
             sanitized = sanitize_and_truncate(title)
             if sanitized:

@@ -9,7 +9,8 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple
 
-from .utils import run, which
+from .utils import which, run
+from .exiftoold import exiftool as et_call, available as et_available
 
 class ImgCfg:
     def __init__(self, args):
@@ -30,10 +31,10 @@ class ImgCfg:
         ]
 
 def exif_make_model(path: Path) -> Tuple[str,str,str]:
-    if not which("exiftool"):
+    if not et_available():
         return "","",""
     tags = ["-Make","-Model","-Software","-s","-s","-s", str(path)]
-    rc, out, _ = run(["exiftool"] + tags, timeout=10)
+    rc, out, _ = et_call(tags, timeout=10)
     if rc != 0:
         return "","",""
     lines = [l.strip() for l in out.splitlines()]
@@ -57,8 +58,8 @@ def image_dimensions(path: Path) -> Tuple[Optional[int], Optional[int]]:
                     except: pass
             if w and h:
                 return w, h
-    if which("exiftool"):
-        rc, out, _ = run(["exiftool","-s","-s","-s","-ImageWidth","-ImageHeight", str(path)], timeout=10)
+    if et_available():
+        rc, out, _ = et_call(["-s","-s","-s","-ImageWidth","-ImageHeight", str(path)], timeout=10)
         if rc == 0:
             lines = [l.strip() for l in out.splitlines()]
             try:
@@ -84,8 +85,8 @@ def png_has_alpha(path: Path) -> bool:
         rc, out, _ = run(["file","-b", str(path)], timeout=5)
         if rc == 0 and "RGBA" in out:
             return True
-    if which("exiftool"):
-        rc, out, _ = run(["exiftool","-s","-s","-s","-ColorType", str(path)], timeout=5)
+    if et_available():
+        rc, out, _ = et_call(["-s","-s","-s","-ColorType", str(path)], timeout=5)
         if rc == 0 and "Alpha" in out:
             return True
     return False

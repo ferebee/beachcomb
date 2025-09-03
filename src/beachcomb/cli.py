@@ -44,7 +44,7 @@ def main():
     )
 
     ap.add_argument("--max-per-bin", type=int, default=1000, help="Maximum files per date bin (default 1000).")
-    ap.add_argument("--mode", choices=["light","heavy"], default="light", help="Light (fast defaults) or heavy (deeper checks).")
+    ap.add_argument("--mode", choices=["light","heavy"], default="heavy", help="Light (quick mode) or heavy (default, deeper checks).")
     ap.add_argument("--workers", type=int, default=8, help="Parallel workers (default 8).")
 
     # PDFs
@@ -81,7 +81,7 @@ def main():
     ## set default undated_cutoff to 7 days ago - assume no carved file has a younger original mtime
     if not args.undated_cutoff:
         args.undated_cutoff = (datetime.now() - timedelta(days=7)).date().isoformat()
-        log(f"NOTE: --undated-cutoff not specified. Files newer than {args.undated_cutoff} will be treated as undated")
+        log(f"NOTE: --undated-cutoff not specified. Files newer than {args.undated_cutoff} will be treated as undated.")
 
     # --- Dependency Check ---
     # Check for tools required based on user-selected options.
@@ -117,7 +117,7 @@ def main():
 
     img_cfg = ImgCfg(args)
     
-    log(f"beachcomb v{__version__} starting up...")
+    log(f"beachcomb {__version__} starting up...")
 
     if args.move:
         log(f"DANGER -- Move mode is completely untested. Aborting!")
