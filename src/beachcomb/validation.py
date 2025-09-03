@@ -10,7 +10,7 @@ import traceback
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from utils import run, which, log, zip_list_contents
+from .utils import run, which, log, zip_list_contents
 
 # ------------------------- PDF helpers -------------------------
 

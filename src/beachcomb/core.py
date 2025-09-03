@@ -19,13 +19,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # Local module imports
-import utils
-import hashing
-import renaming
-import type_detection
-import date_recovery
-import image_processing
-import validation
+from . import utils
+from . import hashing
+from . import renaming
+from . import type_detection
+from . import date_recovery
+from . import image_processing
+from . import validation
 
 # --- Single Source of Truth for Version ---
 VERSION = "0.1"

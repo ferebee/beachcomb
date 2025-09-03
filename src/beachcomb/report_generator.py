@@ -12,10 +12,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Optional
 from datetime import datetime
-
-# In your actual tool, you would import the version from a single source of truth.
-# from beachcomb import VERSION
-VERSION = "2.0"
+from . import __version__
 
 
 def _format_bytes(byte_count: int) -> str:
@@ -284,7 +281,7 @@ def generate_report(
     footer_html = f"""
     <hr>
     <footer>
-      Script: recover_sort.py v{VERSION} &nbsp;&bull;&nbsp; Mode: {run_mode} &nbsp;&bull;&nbsp; Workers: {num_workers} &nbsp;&bull;&nbsp; Run time: {_format_duration(run_time_secs)}<br>
+      Script: recover_sort.py v{__version__} &nbsp;&bull;&nbsp; Mode: {run_mode} &nbsp;&bull;&nbsp; Workers: {num_workers} &nbsp;&bull;&nbsp; Run time: {_format_duration(run_time_secs)}<br>
       Tools: {tools_str}
     </footer>
     """

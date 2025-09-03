@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple
 
-from utils import run, which
+from .utils import run, which
 
 class ImgCfg:
     def __init__(self, args):

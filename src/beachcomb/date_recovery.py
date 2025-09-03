@@ -9,7 +9,7 @@ import datetime as dt
 from pathlib import Path
 from typing import Optional, Tuple
 
-from utils import run, which
+from .utils import run, which
 
 def exiftool_date(path: Path):
     if not which("exiftool"):

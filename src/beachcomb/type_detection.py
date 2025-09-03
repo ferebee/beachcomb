@@ -9,7 +9,7 @@ File type detection logic for the beachcomb tool.
 from pathlib import Path
 from typing import Optional, Tuple
 
-from utils import run, which
+from .utils import run, which
 
 EXT_FAMILY = {
     # Images

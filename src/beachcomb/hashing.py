@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from utils import run, which
+from .utils import run, which
 
 def fast_hash(data: bytes) -> str:
     return hashlib.blake2b(data, digest_size=16).hexdigest()

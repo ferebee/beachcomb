@@ -13,7 +13,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from collections import Counter
 
-from utils import run, which, zip_list_contents, log
+from .utils import run, which, zip_list_contents, log
 
 # --- Start of New/Modified Code ---
 
