@@ -1,26 +1,34 @@
 # beachcomb
 
-Analyze & sort carved files by filetype and date with dedup, integrity checks and
-reporting. Tested on macOS only.
+This tool can help analyze and sort files recovered by file carving. It
+accepts a folder with a large number of files that may not have proper modification dates
+and filenames. It attempts to classify them by filetype, performs integrity checks,
+and regenerates approximate filenames and dates from internal metadata. It’s particularly
+useful for datasets extracted with the excellent PhotoRec data recovery tool. Tested on
+macOS only.
 
 > **What are "carved files"?**  
 > Tools like **PhotoRec** can recover files from a disk with a missing or damaged directory
-> structure with “file carving”. They scan the raw storage for
-> known file data structures, such as JPEG headers. Usually, metadata such as filenames
+> structure. They scan the raw storage for
+> known data structures, such as JPEG headers. Usually, metadata such as filenames
 > and creation dates is lost along with the directory structure. **beachcomb** will attempt
 > to classify, validate, date, organize and name the recovered files.
 
 ## Features
-- Identify and popular file types, eliminate exact duplicates.
-- Recover plausible dates (EXIF, XMP, IPTC, QuickTime, Office).
+- Identify popular file types and eliminate exact duplicates.
+- Recover plausible dates from EXIF, XMP, IPTC, QuickTime, and internal Office data.
 - Sort into bins by filetype and date.
-- Validate file integrity and separate damaged files.
+- Validate file integrity and segregate damaged files.
 - Optionally generate filenames from internal metadata.
-- Add a hidden OCR text layer to PDFs for Spotligh search.
+- Add a hidden OCR text layer to PDFs for Spotlight search.
 - Generate a human-friendly HTML report.
 
-## Quickstart
+## Caveat
+This is a work in progress. Many features are buggy or incomplete. Use at your own
+risk on a backup. Parts of the report are incorrect. Verify your results.
 
+## Quickstart
+This probably doesn’t fully work yet.
 ```bash
 # Recommended for end users:
 pipx install beachcomb
@@ -38,7 +46,7 @@ beachcomb --version
 beachcomb --source /path/to/carved --dest /path/to/sorted --dry-run
 ```
 
-You can also run via Python:
+You can also run via Python, if installation was successful:
 ```bash
 python -m beachcomb --help
 ```
@@ -50,13 +58,14 @@ python -m beachcomb --help
 ```bash
 brew install exiftool ffmpeg qpdf poppler mupdf-tools ghostscript ocrmypdf
 ```
+Many Python modules are required and must be installed with pip install.
 
 ## License
 MIT © 2025 Chris Ferebee
 
 ## Credits & Acknowledgements
-Concept by Chris Ferebee, execution mostly by LLMs.  
-This project is not affiliated with the excellent PhotoRec/TestDisk.
+Coding by ChatGPT, errors by Chris Ferebee.  
+This project is not affiliated with the excellent PhotoRec/TestDisk. 
 Mad props to exiftool, which does a lot of the heavy lifting.
 
 ## Contributing
