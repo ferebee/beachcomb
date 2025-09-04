@@ -289,13 +289,11 @@ class Planner:
 
     # ------------------------- binning -------------------------
 
-#    def _dest_filename(self, r: dict, exiftool_daemon) -> str:
     def _dest_filename(self, r: dict) -> str:
         src = Path(r["source_path"])
         guessed_ext = r.get("guessed_ext") or None
         
         if self.rename != "none":
-#            new_name = renaming.generate_new_name(src, self.rename, r, exiftool_daemon=exiftool_daemon)
             new_name = renaming.generate_new_name(src, self.rename, r)
             if new_name:
                 return new_name
@@ -353,6 +351,7 @@ class Planner:
         self.promote_other_types()
 
         make_counts, model_counts = self.collect_make_model_counts()
+# don't skip gating logic        
         promoted_makes = {mk for mk, c in make_counts.items() if c >= self.promote_make_threshold}
         promoted_models = {mm for mm, c in model_counts.items() if c >= self.promote_model_threshold}
 
@@ -372,10 +371,22 @@ class Planner:
                 continue
             mk = (r.get("exif_make") or "").strip()
             md = (r.get("exif_model") or "").strip()
+# conditionally sort by gated make and model types            
             if mk and md and (mk, md) in promoted_models:
                 r["subtype"] = f"Camera-Model/{image_processing.sanitize_token(mk)}_{image_processing.sanitize_token(md)}"; continue
             if mk and mk in promoted_makes:
                 r["subtype"] = f"Camera-Make/{image_processing.sanitize_token(mk)}"; continue
+# or Unconditionally sort by camera model when available, else by make.
+#            if mk and md:
+#                r["subtype"] = (
+#                    f"Camera-Model/{image_processing.sanitize_token(mk)}_"
+#                    f"{image_processing.sanitize_token(md)}"
+#                )
+#                continue
+#            if mk:
+#                r["subtype"] = f"Camera-Make/{image_processing.sanitize_token(mk)}"
+#                continue
+# end unconditional mod
 
         groups: Dict[Tuple[str,str], List[int]] = {}
         for idx, r in enumerate(self.records):

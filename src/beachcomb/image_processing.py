@@ -30,19 +30,41 @@ class ImgCfg:
             (2560,1600),(2880,1800),(3024,1964),(3456,2234)
         ]
 
-def exif_make_model(path: Path) -> Tuple[str,str,str]:
+#def exif_make_model(path: Path) -> Tuple[str,str,str]:
+#    if not et_available():
+#        return "","",""
+#    tags = ["-Make","-Model","-Software","-s","-s","-s", str(path)]
+#    rc, out, _ = et_call(tags, timeout=10)
+#    if rc != 0:
+#        return "","",""
+#    lines = [l.strip() for l in out.splitlines()]
+#    vals = lines + ["","",""]
+#    make = vals[0] if len(vals)>0 else ""
+#    model = vals[1] if len(vals)>1 else ""
+#    software = vals[2] if len(vals)>2 else ""
+#    return make, model, software
+
+def exif_make_model(path: Path) -> Tuple[str, str, str]:
+    """
+    Return (Make, Model, Software) as plain strings.
+    Handles exiftoold's leading "{readyN}" correlation tokens.
+    """
     if not et_available():
-        return "","",""
-    tags = ["-Make","-Model","-Software","-s","-s","-s", str(path)]
-    rc, out, _ = et_call(tags, timeout=10)
+        return "", "", ""
+    # Put formatting flags *before* tags; some exiftool builds care about order.
+    args = ["-s", "-s", "-s", "-Make", "-Model", "-Software", str(path)]
+    rc, out, _ = et_call(args, timeout=10)
     if rc != 0:
-        return "","",""
-    lines = [l.strip() for l in out.splitlines()]
-    vals = lines + ["","",""]
-    make = vals[0] if len(vals)>0 else ""
-    model = vals[1] if len(vals)>1 else ""
-    software = vals[2] if len(vals)>2 else ""
+        return "", "", ""
+    lines = [l.strip() for l in out.splitlines() if l.strip()]
+    # Drop any leading "{readyN}" token from exiftoold
+    while lines and re.fullmatch(r"\{ready\d+\}", lines[0]):
+        lines.pop(0)
+    # Pad to at least 3 so indexing is safe
+    lines += ["", "", ""]
+    make, model, software = lines[0], lines[1], lines[2]
     return make, model, software
+
 
 def image_dimensions(path: Path) -> Tuple[Optional[int], Optional[int]]:
     if which("sips"):
