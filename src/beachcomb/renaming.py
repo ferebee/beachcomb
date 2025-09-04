@@ -18,29 +18,6 @@ from collections import Counter
 from .utils import run, which, zip_list_contents, log
 from .exiftoold import exiftool as et_call, available as et_available
 
-## --- Start of New/Modified Code ---
-#
-#class ExifToolDaemon:
-#    """
-#    A context manager to manage a persistent exiftool process for batch processing.
-#    Thin adapter that proxies to the shared exiftool daemon in beachcomb.exiftoold.
-#    Keeps the existing context-manager API so callers don't need to change.
-#    """
-#    def __enter__(self):
-#        return self
-#
-#    def __exit__(self, exc_type, exc, tb):
-#        return False
-#    def execute(self, *args: str):
-#        # Use the shared ExifTool daemon for a single call
-#        if not et_available():
-#            return []
-#        rc, out, _ = et_call(list(args), timeout=15)
-#        if rc != 0 or not out:
-#            return []
-#        return [line for line in out.splitlines() if line.strip()]
-
-# def extract_metadata_title(path: Path, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
 def extract_metadata_title(path: Path) -> Optional[str]:
     """
     Extracts a title-like field from file metadata using a persistent ExifTool process.
@@ -76,9 +53,6 @@ def extract_metadata_title(path: Path) -> Optional[str]:
         "-By-line"            # IPTC standard for the author's name.
     ]
     
-#    # Execute the command on the daemon to extract the first available tag.
-#    # Exiftool will process the tags in order and return the first one it finds.
-#    output_lines = exiftool_daemon.execute(*tags, str(path))
     # Ask shared exiftoold daemon (returns rc, stdout, stderr_like)
     rc, out, _ = et_call(tags + [str(path)], timeout=15)
     output_lines = out.splitlines() if rc == 0 and out else []
@@ -96,7 +70,6 @@ def extract_metadata_title(path: Path) -> Optional[str]:
                 return value
     return None
 
-# def generate_new_name(path: Path, policy: str, record: Dict, exiftool_daemon: ExifToolDaemon) -> Optional[str]:
 def generate_new_name(path: Path, policy: str, record: Dict) -> Optional[str]:
     """Main dispatcher for generating a new filename based on policy."""
     if policy == "photorec" and not is_photorec_name(path.name):

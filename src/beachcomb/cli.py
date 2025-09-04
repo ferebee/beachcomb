@@ -34,7 +34,6 @@ def main():
     )
     ap.add_argument("--source", required=True, help="Source folder (carved files).")
     ap.add_argument("--dest", required=True, help="Destination root.")
-#    ap.add_argument("--undated-cutoff", required=True, help="ISO date; files with mtime newer than this are treated as undated and will try metadata date recovery.")
     ap.add_argument(
         "--undated-cutoff",
         help=(

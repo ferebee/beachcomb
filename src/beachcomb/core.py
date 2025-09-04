@@ -307,9 +307,6 @@ class Planner:
                 name = f"{name}.{guessed_ext}"
         return name
 
-#    def _assign_dest(self, idx: int, bin_dir: Path, exiftool_daemon):
-#        r = self.records[idx]
-#        dest_name = self._dest_filename(r, exiftool_daemon)
     def _assign_dest(self, idx: int, bin_dir: Path):
         r = self.records[idx]
         dest_name = self._dest_filename(r)
@@ -527,12 +524,6 @@ class Planner:
                     label = f"undated-{(start//self.max_per_bin)+1:04d}"
                     bins_plan.append((label, part))
             
-#            # We use exiftool to assign names based on internal titles. Run it in daemon mode here
-#            with renaming.ExifToolDaemon() as exiftool_daemon:
-#                for label, members in sorted(bins_plan, key=lambda t: t[0]):
-#                    bin_dir = fam_root / label
-#                    for i in sorted(members, key=lambda j: self.records[j]["source_path"]):
-#                        self._assign_dest(i, bin_dir, exiftool_daemon)
             # Assign destinations (reads metadata via shared exiftoold)
             for label, members in sorted(bins_plan, key=lambda t: t[0]):
                 bin_dir = fam_root / label
