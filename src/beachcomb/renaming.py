@@ -8,10 +8,11 @@ Content-aware file renaming for the beachcomb tool.
 import re
 import subprocess
 # from __future__ import annotations
+import zipfile
+import json, unicodedata
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional, Dict, List
-import zipfile
-import xml.etree.ElementTree as ET
 from collections import Counter
 
 from .utils import run, which, zip_list_contents, log
@@ -109,7 +110,6 @@ def generate_new_name(path: Path, policy: str, record: Dict) -> Optional[str]:
         new_name_part = rename_zip_archive(path)
     else:
         # Pass the daemon instance to the metadata extraction function
-#        title = extract_metadata_title(path, exiftool_daemon=exiftool_daemon)
         title = extract_metadata_title(path)
         if title:
             sanitized = sanitize_and_truncate(title)
@@ -117,7 +117,8 @@ def generate_new_name(path: Path, policy: str, record: Dict) -> Optional[str]:
                 new_name_part = f"-{sanitized}"
 
     if new_name_part:
-        return f"{original_stem}{new_name_part}{original_suffix}"
+        candidate = f"{original_stem}{new_name_part}{original_suffix}"
+        return enforce_filename_byte_limit(candidate)
     
     return None
 
@@ -162,11 +163,36 @@ def is_photorec_name(filename: str) -> bool:
     """Checks if a filename matches the PhotoRec f####### pattern."""
     return bool(re.match(r"f\d{7,}", Path(filename).stem))
 
+def _clean_title_text(s: str) -> str:
+    """Fix common metadata artifacts: embedded NULs, XP UTF-16LE chunks, normalize."""
+    if not s:
+        return s
+    # Remove embedded NULs (UTF-16LE interpreted as Latin-1)
+    s = s.replace("\x00", "")
+    # Collapse patterns like "_000F_000w_000d" -> "Fwd"
+    s = re.sub(r'(?:^|_)0{3}([A-Za-z0-9])', r'\1', s)
+    # Normalize Unicode and strip odd edges
+    s = unicodedata.normalize("NFC", s).strip(" -_.")
+    return s
+
+def enforce_filename_byte_limit(basename: str, max_bytes: int = 240) -> str:
+    """
+    Ensure basename (stem+suffix) fits within max_bytes (APFS limit is 255).
+    Prefer trimming from the right (title part), keep suffix intact.
+    """
+    suffix = Path(basename).suffix
+    stem = basename[:-len(suffix)] if suffix else basename
+    while len(basename.encode("utf-8")) > max_bytes and len(stem) > 1:
+        stem = stem[:-1]
+        basename = stem + suffix
+    return basename
+
 def sanitize_and_truncate(text: str, max_len: int = 60) -> str:
-    """Sanitizes and truncates a string to be used in a filename."""
-    text = Path(text).stem
-    sanitized = re.sub(r'[^\w\-]+', '-', text)
-    sanitized = re.sub(r'--+', '-', sanitized).strip('-')
+    """Sanitize to filename-safe and cap characters (additional byte cap happens later)."""
+    text = _clean_title_text(text)
+    # Don’t treat text as a path; keep all characters then sanitize
+    sanitized = re.sub(r'[^\w\-]+', '-', text)     # keep letters/digits/_/-
+    sanitized = re.sub(r'--+', '-', sanitized).strip('-_ .')
     if len(sanitized) > max_len:
         if '-' in sanitized[:max_len]:
             return sanitized[:sanitized.rfind('-', 0, max_len)]

@@ -8,10 +8,10 @@ useful for datasets extracted with the excellent PhotoRec data recovery tool. Te
 macOS only.
 
 > **What are "carved files"?**  
-> Tools like **PhotoRec** can recover files from a disk with a missing or damaged directory
-> structure. They scan the raw storage for
-> known data structures, such as JPEG headers. Usually, metadata such as filenames
-> and creation dates is lost along with the directory structure. **beachcomb** will attempt
+> Tools like **PhotoRec** can recover files from a disk with a missing or damaged directory.
+> They scan the raw storage for
+> known data structures, such as JPEG headers. Usually, metadata such as filenames, folders
+> and creation dates is lost. **beachcomb** will attempt
 > to classify, validate, date, organize and name the recovered files.
 
 ## Features
@@ -64,8 +64,8 @@ Many Python modules are required and must be installed with pip install.
 MIT © 2025 Chris Ferebee
 
 ## Credits & Acknowledgements
-Coding by ChatGPT, errors by Chris Ferebee.  
-This project is not affiliated with the excellent PhotoRec/TestDisk. 
+Coding by ChatGPT, errors by Chris Ferebee.
+This project is not affiliated with the excellent PhotoRec/TestDisk.
 Mad props to exiftool, which does a lot of the heavy lifting.
 
 ## Contributing
