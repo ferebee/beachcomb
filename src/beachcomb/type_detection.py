@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-type_detection.py — v0.1
+type_detection.py
 
 File type detection logic for the beachcomb tool.
 """

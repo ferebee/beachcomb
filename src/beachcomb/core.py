@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-beachcomb.py — v0.1
+beachcomb.py
 
 Core logic for the beachcomb file recovery and sorting tool.
 This file contains the Planner class which orchestrates the file processing,
@@ -30,9 +30,6 @@ from . import image_processing
 from . import validation
 from .exiftoold import exiftool as et_call, available as et_available
 
-
-# --- Single Source of Truth for Version ---
-VERSION = "0.1"
 
 # ------------------------- main planner -------------------------
 
@@ -102,6 +99,7 @@ class Planner:
         if undated_flag and try_exif:
             if family == "Images":
                 date_source, date_local = date_recovery.exiftool_date(path)
+ #               utils.log(f"date_source: {date_source}  ---  date_local: {date_local}  --- file: {path}")
             elif family == "Video":
                 src1, dt1 = date_recovery.video_date(path)
                 src2, dt2, dur = date_recovery.ffprobe_date_and_duration(path)
@@ -121,8 +119,8 @@ class Planner:
                     picked = None
                 if picked:
                     date_source, date_local = picked
-            # elif family == "PDFs":
-            #     date_source, date_local = pdfinfo_dates(path)  <- This is the bug
+            elif family == "PDFs":
+                date_source, date_local = date_recovery.pdfinfo_dates(path) #  <- This is the bug
 
         pdf_kind = ""
         pdf_version = pdf_encrypted = pdf_linearized = ""
@@ -151,7 +149,7 @@ class Planner:
         iphone = False
         if family == "Images":
             px_w, px_h = image_processing.image_dimensions(path)
-            if utils.which("exiftool"):
+            if et_available():
                 exif_mk, exif_md, exif_sw = image_processing.exif_make_model(path)
             if image_processing.is_iphone_photo_from_make_model(exif_mk, exif_md) and subtype in ("JPG","HEIC"):
                 iphone = True
@@ -663,14 +661,16 @@ class Planner:
                 continue
             if r["date_local"]:
                 try:
-                    if utils.which("exiftool"):
+                    if et_available():
                         val = r["date_local"].replace("T", " ")
                         et_call(["-overwrite_original",
-                             f"-FileModifyDate<{val}", f"-FileCreateDate<{val}", str(dest)], timeout=20)
+                             f"-FileModifyDate={val}", f"-FileCreateDate={val}", str(dest)], timeout=20)
                     else:
                         ts = dt.datetime.fromisoformat(r["date_local"]).timestamp()
                         os.utime(dest, times=(ts, ts))
-                except Exception:
+                except Exception as e:
+                    # (Optional) log the error; avoid swallowing silently
+                    utils.log(f"Failed to set times for {dest}: {e}")
                     pass
 
     def run(self):
@@ -733,7 +733,7 @@ class Planner:
             for p, err in failures[:5]:
                 utils.log(f"  · {p} → {err}")
 
-        utils.log("Planning dedupe full-hash confirmations...")
+        utils.log("Planning dedup full-hash confirmations...")
         self.stage_full_hash_for_collisions()
         
         utils.log("Planning bins...")
@@ -751,13 +751,6 @@ class Planner:
             and (self.pdf_ocr == "all" or (self.pdf_ocr == "scans" and r.get("pdf_kind") == "Scans"))
         )
         utils.log(f"Plan summary: total={total}, with_dest={with_dest}, duplicates={dups}, damaged={damaged}, pdfs_for_ocr={ocr_wait}")
-        # Show a few example destinations
-        shown = 0
-        for r in self.records:
-            if r.get("dest_path"):
-                utils.log(f" → sample dest: {r['dest_path']}")
-                shown += 1
-                if shown >= 3: break
 
         manifests_dir = self.dest / "manifests"
         # reports_dir = self.dest / "reports"

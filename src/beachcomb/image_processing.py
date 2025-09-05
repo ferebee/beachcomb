@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-image_processing.py — v0.1
+image_processing.py
 
 Image-specific helpers and classification logic for the beachcomb tool.
 """

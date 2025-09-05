@@ -281,7 +281,7 @@ def generate_report(
     footer_html = f"""
     <hr>
     <footer>
-      Script: recover_sort.py v{__version__} &nbsp;&bull;&nbsp; Mode: {run_mode} &nbsp;&bull;&nbsp; Workers: {num_workers} &nbsp;&bull;&nbsp; Run time: {_format_duration(run_time_secs)}<br>
+      Script: beachcomb.py v{__version__} &nbsp;&bull;&nbsp; Mode: {run_mode} &nbsp;&bull;&nbsp; Workers: {num_workers} &nbsp;&bull;&nbsp; Run time: {_format_duration(run_time_secs)}<br>
       Tools: {tools_str}
     </footer>
     """
@@ -329,6 +329,8 @@ def generate_report(
 </head>
 <body>
     <h1>{title}</h1>
+    Provisional/incomplete, for informational purposes only<br>
+	the beachcomb recovery script is experimental and has bugs, do not rely on this as your source of truth<br><br>
     <div class="sub">
         Source: <code>{source_path}</code><br>
         Destination: <code>{dest_path}</code>

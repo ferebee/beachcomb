@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-hashing.py — v0.1
+hashing.py
 
 File hashing utilities for the beachcomb tool.
 """

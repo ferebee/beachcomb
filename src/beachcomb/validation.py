@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-validation.py — v0.1
+validation.py
 
 File integrity validation and repair for the beachcomb tool.
 """

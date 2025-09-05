@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-utils.py — v0.1
+utils.py
 
 Small, general-purpose utilities for the beachcomb tool.
 """

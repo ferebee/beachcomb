@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-renaming.py — v0.1
+renaming.py
 
 Content-aware file renaming for the beachcomb tool.
 """

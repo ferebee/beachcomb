@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-exiftoold.py — v0.2
+exiftoold.py
 Robust, single-owner ExifTool daemon wrapper for beachcomb.
 
 Design:

@@ -1,24 +1,25 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-date_recovery.py — v0.1
+date_recovery.py
 
 Date recovery from file metadata for the beachcomb tool.
 """
 import datetime as dt
 from pathlib import Path
 from typing import Optional, Tuple
-from .utils import which, run
+from .utils import which, run, log
 from .exiftoold import exiftool as et_call, available as et_available
 
 def exiftool_date(path: Path):
     if not et_available():
         return (None, None)
     tags = [
-        "-SubSecDateTimeOriginal","-DateTimeOriginal","-CreateDate","-XMP:CreateDate",
+        "-SubSecDateTimeOriginal","-DateTimeOriginal","-CreateDate","-XMP-photoshop:DateCreated","-XMP:CreateDate",
         "-QuickTime:CreateDate","-api","QuickTimeUTC=1","-s","-s","-s", str(path)
     ]
     rc, out, _ = et_call(tags, timeout=20)
+#    log(f"file: {str(path)} --- et_call out: {out}")
     if rc != 0:
         return (None, None)
     for val in [l.strip() for l in out.splitlines() if l.strip()]:
@@ -27,13 +28,14 @@ def exiftool_date(path: Path):
                 val = f"{val[0:4]}-{val[5:7]}-{val[8:10]}{val[10:]}"
             d = dt.datetime.fromisoformat(val.replace(" ","T"))
             if d.tzinfo is None: d = d.replace(tzinfo=dt.timezone.utc)
+#            log(f"file: {str(path)} --- val: {val} --- d: {d.astimezone()}")
             return ("exif", d.astimezone())
         except Exception:
             continue
     return (None,None)
 
 def video_date(path: Path):
-    if not which("exiftool"):
+    if not et_available():
         return (None, None)
     tags = ["-api","QuickTimeUTC=1","-MediaCreateDate","-TrackCreateDate","-CreateDate","-DateTimeOriginal","-s","-s","-s", str(path)]
     rc, out, _ = et_call(tags, timeout=20)
@@ -87,6 +89,7 @@ def pdfinfo_dates(path: Path) -> Tuple[Optional[str], Optional[dt.datetime]]:
     if not which("pdfinfo"):
         return None, None
     rc, out, _ = run(["pdfinfo", "-isodates", str(path)], timeout=20)
+#    log(f"PDF: {str(path)} --- rc: {rc} --- out: {out}")
     if rc != 0:
         return None, None
     creation_date: Optional[dt.datetime] = None

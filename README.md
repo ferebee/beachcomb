@@ -14,6 +14,11 @@ macOS only.
 > and creation dates is lost. **beachcomb** will attempt
 > to classify, validate, date, organize and name the recovered files.
 
+Note: the more bugs I fix, the worse the code looks which the LLMs wrote for me.
+It’s really bad. Shouldn’t look a gift horse in the mouth though, if I can’t do the
+work myself. It’s also horribly inefficient. That said, I’m shipping the first
+dataset that’s been sorted by version 0.1.4. It’s a lot better than nothing.
+
 ## Features
 - Identify popular file types and eliminate exact duplicates.
 - Recover plausible dates from EXIF, XMP, IPTC, QuickTime, and internal Office data.
@@ -21,14 +26,14 @@ macOS only.
 - Validate file integrity and segregate damaged files.
 - Optionally generate filenames from internal metadata.
 - Add a hidden OCR text layer to PDFs for Spotlight search.
-- Generate a human-friendly HTML report.
+- Generate a human-friendly HTML report (WIP).
 
 ## Caveat
 This is a work in progress. Many features are buggy or incomplete. Use at your own
-risk on a backup. Parts of the report are incorrect. Verify your results.
+risk on a backup. Most of the report is incorrect. Verify your results.
 
 ## Quickstart
-This probably doesn’t fully work yet.
+Installation is mostly untested and may work by accident:
 ```bash
 # Recommended for end users:
 pipx install beachcomb
@@ -64,9 +69,10 @@ Many Python modules are required and must be installed with pip install.
 MIT © 2025 Chris Ferebee
 
 ## Credits & Acknowledgements
-Coding by ChatGPT, errors by Chris Ferebee.
+Coding by ChatGPT, errors by ChatGPT and Chris Ferebee.
 This project is not affiliated with the excellent PhotoRec/TestDisk.
-Mad props to exiftool, which does a lot of the heavy lifting.
+Mad props to exiftool, which does a lot of the actual work, along with
+ffmpeg, poppler and others.
 
 ## Contributing
 PRs welcome.

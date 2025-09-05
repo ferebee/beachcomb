@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 Chris Ferebee
 """
-cli.py — v0.1
+cli.py
 
 Command-line interface for the beachcomb carved file analysis and sorting tool.
 """
